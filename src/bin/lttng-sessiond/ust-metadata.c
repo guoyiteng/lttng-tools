@@ -29,6 +29,7 @@
 #include <inttypes.h>
 #include <common/common.h>
 #include <common/time.h>
+#include <sys/mman.h>
 
 #include "ust-registry.h"
 #include "ust-clock.h"
@@ -39,6 +40,7 @@
 #endif
 
 #define NR_CLOCK_OFFSET_SAMPLES		10
+#define TWO_MB 0x200000
 
 struct offset_sample {
 	int64_t offset;			/* correlation offset */
@@ -128,16 +130,24 @@ static
 int metadata_file_append(struct ust_registry_session *session,
 		const char *str, size_t len)
 {
-	ssize_t written;
-
 	if (session->metadata_fd < 0) {
 		return 0;
 	}
 	/* Write to metadata file */
-	written = lttng_write(session->metadata_fd, str, len);
-	if (written != len) {
-		return -1;
+	// assume len < TWO_MB.
+	void* metadata_ptr = mmap(NULL, TWO_MB, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_HUGETLB, session->metadata_fd, 0);
+
+	if (metadata_ptr == MAP_FAILED) {
+		perror("metadata mmap");
 	}
+
+	memcpy(metadata_ptr, str, len);
+	int ret = munmap(metadata_ptr, TWO_MB);
+	
+	if (ret < 0) {
+		perror("metadata munmap");
+	}
+
 	return 0;
 }
 

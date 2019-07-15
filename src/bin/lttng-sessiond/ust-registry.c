@@ -933,7 +933,7 @@ int ust_registry_session_init(struct ust_registry_session **sessionp,
 	if (session->metadata_path[0]) {
 		/* Create metadata file */
 		ret = run_as_open(session->metadata_path,
-			O_WRONLY | O_CREAT | O_EXCL,
+			O_RDWR | O_CREAT | O_EXCL,
 			S_IRUSR | S_IWUSR, euid, egid);
 		if (ret < 0) {
 			PERROR("Opening metadata file");
