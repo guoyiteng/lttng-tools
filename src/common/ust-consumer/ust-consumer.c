@@ -378,7 +378,8 @@ int create_posix_shm(void)
 	char tmp_name[NAME_MAX];
 	int shmfd, ret;
 
-	ret = snprintf(tmp_name, NAME_MAX, "/ust-shm-consumer-%d", getpid());
+	// use HugePage dir.
+	ret = snprintf(tmp_name, NAME_MAX, "/dev/hugepages/ust-shm-consumer-%d", getpid());
 	if (ret < 0) {
 		PERROR("snprintf");
 		return -1;
@@ -390,12 +391,12 @@ int create_posix_shm(void)
 	 * pathname so that some OS implementations can keep it local to
 	 * the process (POSIX leaves this implementation-defined).
 	 */
-	shmfd = shm_open(tmp_name, O_CREAT | O_EXCL | O_RDWR, 0700);
+	shmfd = open(tmp_name, O_CREAT | O_EXCL | O_RDWR, 0700);
 	if (shmfd < 0) {
 		PERROR("shm_open");
 		goto error_shm_open;
 	}
-	ret = shm_unlink(tmp_name);
+	ret = unlink(tmp_name);
 	if (ret < 0 && errno != ENOENT) {
 		PERROR("shm_unlink");
 		goto error_shm_release;
